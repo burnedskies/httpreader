@@ -3,12 +3,19 @@ package httpreader
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
 /*
 httpRange represents a range of content bytes that can be used in HTTP
 responses to specify partial content retrieval.
+
+Example:
+
+	httpRange{start: 10, end: 20} // Represents "Range: bytes=10-20"
+	httpRange{start: 5, end: -1}  // Represents "Range: bytes=5-"
+	httpRange{start: -1, end: 15} // Represents "Range: bytes=-15"
 */
 type httpRange struct {
 	start int64
@@ -17,21 +24,8 @@ type httpRange struct {
 
 /*
 The String method converts the httpRange into a string that follows the
-HTTP range header format.
-
-Example:
-
-	r1 := httpRange{start: 10, end: 20} // Represents bytes 10 to 20
-	fmt.Println(r1.String()) // Output: "10-20"
-
-	r2 := httpRange{start: 5, end: -1} // Represents bytes starting from 5 to the end
-	fmt.Println(r2.String()) // Output: "5-"
-
-	r3 := httpRange{start: -1, end: 15} // Represents the last 15 bytes
-	fmt.Println(r3.String()) // Output: "-15"
-
-In cases where the start or end are invalid or the range is not well-defined,
-the String method returns an empty string.
+HTTP range header format. In cases where the start or end are invalid or
+the range is not well-defined, String() returns an empty string.
 */
 func (r httpRange) String() string {
 	if r.start < 0 && r.end >= 0 {
@@ -56,8 +50,8 @@ func setRangeHeader(header http.Header, ranges ...*httpRange) {
 	header.Set("Range", "bytes="+strings.Join(r, ","))
 }
 
-func newRangeRequest(url string, headers http.Header, ranges ...*httpRange) (*http.Request, error) {
-	if req, err := http.NewRequest(http.MethodGet, url, nil); err == nil {
+func newRangeRequest(u *url.URL, headers http.Header, ranges ...*httpRange) (*http.Request, error) {
+	if req, err := http.NewRequest(http.MethodGet, u.String(), nil); err == nil {
 		req.Header = headers.Clone()
 		setRangeHeader(req.Header, ranges...)
 

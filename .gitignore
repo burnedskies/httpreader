@@ -33,4 +33,4 @@ go.work.sum
 *.txt
 
 reader_test.go
-/testdata
+testdata/
